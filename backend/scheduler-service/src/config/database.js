@@ -2,7 +2,7 @@ const dotenv = require("dotenv");
 const path = require("path");
 
 dotenv.config();
-const appEnv = process.env.APP_ENV || "local";
+const appEnv = process.env.APP_ENV || "development";
 
 const envFilePath = path.resolve(process.cwd() ,`.env.${appEnv}`);
 
