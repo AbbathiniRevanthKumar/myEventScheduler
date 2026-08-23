@@ -15,4 +15,6 @@ export const envConstants = {
   PG_PASSWORD: process.env.PG_PASSWORD!,
   PG_USER: process.env.PG_USER!,
   PG_PORT: process.env.PG_PORT!,
+  REDIS_HOST : process.env.REDIS_HOST || "localhost",
+  REDIS_PORT : process.env.REDIS_PORT || 6379,
 };

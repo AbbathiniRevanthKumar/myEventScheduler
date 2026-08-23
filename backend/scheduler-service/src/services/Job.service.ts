@@ -1,6 +1,12 @@
+import logger from "../config/logger";
 import { Job, JobCreationAttributes, JobError } from "../models/Job";
+import { jobQueue } from "../queue/jobQueue";
 import { jobRepository } from "../repositories/job.repository";
-import { InvalidTransitionError, NotFoundError } from "../utils/error";
+import {
+  CustomError,
+  InvalidTransitionError,
+  NotFoundError,
+} from "../utils/error";
 import { JobStatus } from "../utils/types";
 
 const VALID_TRANSITIONS: Record<JobStatus, JobStatus[]> = {
@@ -77,7 +83,7 @@ class JobService {
     }
     if (!this.canTransition("FAILED", "DEAD_LETTER")) {
       throw new InvalidTransitionError(
-        `Invalid transition from FAILED state to DEAD_LETTER state` ,
+        `Invalid transition from FAILED state to DEAD_LETTER state`,
       );
     }
     return await jobRepository.updateJob(id, {
@@ -99,6 +105,24 @@ class JobService {
 
   async createJob(data: JobCreationAttributes) {
     const job = await jobRepository.createJob(data);
+    try {
+      await jobQueue.add(
+        job.type,
+        { jobId: job.id },
+        {
+          delay: Math.max(0, (job.runAt?.getTime() ?? Date.now()) - Date.now()),
+        },
+      );
+    } catch (error) {
+      logger.error("Error at queuing the job", error);
+      logger.info("Delete the job", job.id);
+      await jobRepository.deleteJob(job.id);
+      throw new CustomError(
+        "Error at job creation or queuing",
+        500,
+        "JobCreationError",
+      );
+    }
     return job;
   }
 
