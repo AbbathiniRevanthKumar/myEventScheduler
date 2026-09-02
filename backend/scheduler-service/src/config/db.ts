@@ -8,4 +8,5 @@ export const sequelize = new Sequelize({
   username: String(envConstants.PG_USER),
   port: Number(envConstants.PG_PORT),
   dialect: "postgres",
+  logging : false
 });

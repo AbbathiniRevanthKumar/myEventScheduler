@@ -4,10 +4,11 @@ import { statusColorClass, statusBgClass } from "./theme";
 import StatusDot from "./StatusDot";
 
 const statusIcons = {
-  active: <Loader size={16} className="animate-spin"/>,
-  waiting: <Clock3 size={16} className="animate-spin" />,
-  completed: <CheckCircle2 size={16}  />,
-  failed: <XCircle size={16} />,
+  RUNNING: <Loader size={16} className="animate-spin"/>,
+  PENDING: <Clock3 size={16} className="animate-spin" />,
+  COMPLETED: <CheckCircle2 size={16}  />,
+  FAILED: <XCircle size={16} />,
+  DEAD_LETTER: <XCircle size={16} />,
 };
 
 const JobRow = ({ job }) => {

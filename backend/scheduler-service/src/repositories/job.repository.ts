@@ -20,6 +20,7 @@ class JobRepository {
         ...(filters.status && { status: filters.status }),
         isActive: true,
       },
+      order: [["createdAt", "DESC"]],
       limit: filters.limit ?? 50,
       offset: filters.offset ?? 0,
     });

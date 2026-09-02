@@ -4,54 +4,58 @@ import JobRow from "./JobRow";
 import { Radio } from "lucide-react";
 import DepthRow from "./DepthRow";
 import BootSequence from "./BootSequence";
+import axios from "axios";
+import { useJobSocket } from "./customHooks/useJobSocket";
 
 function App() {
-  const [jobs, setJobs] = useState([
-    { id: "a1x9f", name: "send-welcome-email", status: "active", progress: 40 },
-    { id: "b2y10", name: "resize-thumbnail", status: "waiting", progress: 0 },
-    { id: "c3z21", name: "sync-crm-contact", status: "failed", progress: 30 },
-    {
-      id: "d4a33",
-      name: "generate-invoice-pdf",
-      status: "active",
-      progress: 20,
-    },
-    {
-      id: "e5b44",
-      name: "backup-database",
-      status: "completed",
-      progress: 100,
-    },
-  ]);
+  const [jobs, setJobs] = useState([]);
 
   const status = [
     {
       id: 1,
       name: "waiting",
-      key: "waiting",
+      key: "PENDING",
     },
     {
       id: 2,
       name: "active",
-      key: "active",
+      key: "RUNNING",
     },
     {
       id: 3,
       name: "done",
-      key: "completed",
+      key: "COMPLETED",
     },
+    // {
+    //   id: 4,
+    //   name: "failed",
+    //   key: "FAILED",
+    // },
     {
-      id: 4,
-      name: "failed",
-      key: "failed",
+      id: 5,
+      name: "dead_letter",
+      key: "DEAD_LETTER",
     },
   ];
 
   const [clock, setClock] = useState(Date.now());
   const [logs, setLogs] = useState([]);
-  const [isLoading,setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const jobRef = useRef(jobs);
   const total = jobs.length;
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      setIsLoading(true);
+      const response = await axios.get(
+        "http://localhost:9001/scheduler-service/api/v1/jobs",
+      );
+      const jobs = response.data.data ?? [];
+      setJobs(jobs);
+      setIsLoading(false);
+    };
+    fetchJobs();
+  }, []);
 
   useEffect(() => {
     jobRef.current = jobs;
@@ -67,59 +71,10 @@ function App() {
     };
   }, []);
 
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      const newLogs = [];
-      const nextJobs = () => {
-        const current = jobRef.current;
-        const activeJobs = current.filter((job) => job.status === "active");
-        if (activeJobs.length === 0) return current;
-        const nextActiveJob =
-          activeJobs[Math.floor(Math.random() * activeJobs.length)];
-        const next = current.map((job) => {
-          if (job.id !== nextActiveJob.id) return job;
+  useJobSocket(setJobs);
 
-          const updatedJob = { ...job, progress: job.progress + 25 };
-          if (updatedJob.progress >= 100) {
-            newLogs.push({
-              id: crypto.randomUUID(),
-              text: `job.completed ${nextActiveJob.name} id=${nextActiveJob.id}`,
-              time: Date.now(),
-            });
-            updatedJob.status = "completed";
-            updatedJob.progress = 100;
-          }
-
-          return updatedJob;
-        });
-
-        if (activeJobs.length > 1) return next;
-
-        const waitingJobs = next.filter((job) => job.status === "waiting");
-        if (waitingJobs.length === 0) return next;
-        const oldestWaitingJob = waitingJobs.shift();
-
-        newLogs.push({
-          id: crypto.randomUUID(),
-          text: `job.started ${oldestWaitingJob.name} id=${oldestWaitingJob.id}`,
-          time: Date.now(),
-        });
-
-        const updatedJobs = next.map((job) => {
-          if (job.id !== oldestWaitingJob.id) return job;
-          return { ...job, status: "active", progress: 5 };
-        });
-        return updatedJobs;
-      };
-      setJobs(nextJobs());
-      if (newLogs.length) setLogs((prev) => [...prev, ...newLogs]);
-    }, 2000);
-
-    return () => clearInterval(intervalId);
-  }, []);
-
-  if(isLoading){
-    return <BootSequence onDone={()=>setIsLoading(false)}/>
+  if (isLoading) {
+    return <BootSequence onDone={() => setIsLoading(false)} />;
   }
 
   return (
@@ -169,7 +124,7 @@ function App() {
         </div>
       </div>
       {/* job list  */}
-      <div className="flex flex-col mb-6 rounded overflow-hidden border border-border">
+      <div className="flex flex-col mb-6 rounded overflow-y-auto border border-border h-100 ">
         {jobs.map((job) => (
           <JobRow key={job.id} job={job} />
         ))}

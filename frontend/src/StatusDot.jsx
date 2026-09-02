@@ -2,10 +2,10 @@
 import { statusBgClass } from "./theme";
 
 const dotPulseClass = {
-  active: "bg-active/60",
-  waiting: "bg-waiting/60",
-  completed: "bg-completed/60",
-  failed: "bg-failed/60",
+  RUNNING: "bg-active/60",
+  PENDING: "bg-waiting/60",
+  COMPLETED: "bg-completed/60",
+  FAILED: "bg-failed/60",
 };
 
 const StatusDot = ({ status }) => {

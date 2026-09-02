@@ -13,15 +13,17 @@ export const COLORS = {
 };
 
 export const statusColorClass = {
-  active: "text-active",
-  waiting: "text-waiting",
-  completed: "text-completed",
-  failed: "text-failed",
+  RUNNING: "text-active",
+  PENDING: "text-waiting",
+  COMPLETED: "text-completed",
+  FAILED: "text-failed",
+  DEAD_LETTER: "text-failed",
 };
 
 export const statusBgClass = {
-  active: "bg-active",
-  waiting: "bg-waiting",
-  completed: "bg-completed",
-  failed: "bg-failed",
+  RUNNING: "bg-active",
+  PENDING: "bg-waiting",
+  COMPLETED: "bg-completed",
+  FAILED: "bg-failed",
+  DEAD_LETTER: "bg-failed",
 };

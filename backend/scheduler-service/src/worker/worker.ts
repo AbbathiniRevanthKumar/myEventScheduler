@@ -6,6 +6,7 @@ import logger from "../config/logger";
 import { handler } from "../handlers";
 import { NotFoundError } from "../utils/error";
 import { jobQueue } from "../queue/jobQueue";
+import "../events/eventPublisher";
 
 const jobProcessor = async (bullJob: Job) => {
   const { jobId } = bullJob.data;
@@ -25,7 +26,7 @@ const jobProcessor = async (bullJob: Job) => {
       logger.error("No handler for job type ", startedJob.type);
       throw new Error("No handler found");
     }
-    console.log(startedJob.payload);
+    await jobHandler(startedJob.payload);
     await jobService.completeJob(jobId);
   } catch (error: any) {
     logger.error(error.message, error);
@@ -34,7 +35,7 @@ const jobProcessor = async (bullJob: Job) => {
     });
     if (failedJob?.status === "PENDING") {
       // recalculate delay the same way createJob does, though for a retry it's likely immediate (no runAt)
-      const delay = 30000;
+      const delay = 10000;
       await jobQueue.add(
         failedJob.type,
         { jobId: failedJob.id },

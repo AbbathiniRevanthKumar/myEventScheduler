@@ -1,4 +1,5 @@
 import logger from "../config/logger";
+import { jobEvents } from "../events/jobEvents";
 import { Job, JobCreationAttributes, JobError } from "../models/Job";
 import { jobQueue } from "../queue/jobQueue";
 import { jobRepository } from "../repositories/job.repository";
@@ -37,6 +38,29 @@ class JobService {
     return job;
   }
 
+  private notifyStatusChange(previousStatus: JobStatus, updatedJob: Job) {
+    logger.info(`Job status change`, {
+      jobId: updatedJob.id,
+      status: updatedJob.status,
+      previousStatus: previousStatus,
+    });
+    jobEvents.emit("statusChanged", {
+      jobId: updatedJob.id,
+      status: updatedJob.status,
+      previousStatus: previousStatus,
+      timestamp: new Date(),
+    });
+    return;
+  }
+
+  private notifyJobCreated(job: Job) {
+    logger.info(`Job created`, {
+      jobId: job.id,
+    });
+    jobEvents.emit("jobCreated", job);
+    return;
+  }
+
   async startJob(id: string): Promise<Job | null> {
     //status from pending -> running
     //attempts++
@@ -46,6 +70,11 @@ class JobService {
       attempts: job.attempts + 1,
     });
 
+    if (!updatedJob) {
+      throw new CustomError("Failed to update Job", 500, "JobUpdateError");
+    }
+
+    this.notifyStatusChange(job.status, updatedJob);
     return updatedJob;
   }
 
@@ -57,6 +86,11 @@ class JobService {
       completedAt: new Date(),
     });
 
+    if (!updatedJob) {
+      throw new CustomError("Failed to update Job", 500, "JobUpdateError");
+    }
+
+    this.notifyStatusChange(job.status, updatedJob);
     return updatedJob;
   }
 
@@ -66,29 +100,49 @@ class JobService {
     //if attempts < maxAttempts ? pending : dead_letter
     //add error
     const job = await this.getJobOrThrow(id, "FAILED");
-    await jobRepository.updateJob(id, {
+    let failedJob = await jobRepository.updateJob(id, {
       status: "FAILED",
       error: error,
     });
+    if (!failedJob) {
+      throw new CustomError("Failed to update Job", 500, "JobUpdateError");
+    }
+    this.notifyStatusChange(job.status, failedJob);
+
     if (job.attempts < job.maxAttempts) {
       if (!this.canTransition("FAILED", "PENDING")) {
         throw new InvalidTransitionError(
           `Invalid transition from FAILED state to PENDING state`,
         );
       }
-      return await jobRepository.updateJob(id, {
+      const updatedJob = await jobRepository.updateJob(id, {
         status: "PENDING",
         error: null,
       });
+
+      if (!updatedJob) {
+        throw new CustomError("Failed to update Job", 500, "JobUpdateError");
+      }
+
+      this.notifyStatusChange(failedJob.status, updatedJob);
+
+      return updatedJob;
     }
     if (!this.canTransition("FAILED", "DEAD_LETTER")) {
       throw new InvalidTransitionError(
         `Invalid transition from FAILED state to DEAD_LETTER state`,
       );
     }
-    return await jobRepository.updateJob(id, {
+    const updatedJob = await jobRepository.updateJob(id, {
       status: "DEAD_LETTER",
     });
+
+    if (!updatedJob) {
+      throw new CustomError("Failed to update Job", 500, "JobUpdateError");
+    }
+
+    this.notifyStatusChange(failedJob.status, updatedJob);
+    return updatedJob;
   }
 
   async retryJob(id: string): Promise<Job | null> {
@@ -96,11 +150,17 @@ class JobService {
     //attempts to 0
     //status -> pending
     const job = await this.getJobOrThrow(id, "PENDING");
-    return await jobRepository.updateJob(id, {
+    const updatedJob = await jobRepository.updateJob(id, {
       status: "PENDING",
       attempts: 0,
       error: null,
     });
+    if (!updatedJob) {
+      throw new CustomError("Failed to update Job", 500, "JobUpdateError");
+    }
+
+    this.notifyStatusChange(job.status, updatedJob);
+    return updatedJob;
   }
 
   async createJob(data: JobCreationAttributes) {
@@ -113,6 +173,7 @@ class JobService {
           delay: Math.max(0, (job.runAt?.getTime() ?? Date.now()) - Date.now()),
         },
       );
+      this.notifyJobCreated(job);
     } catch (error) {
       logger.error("Error at queuing the job", error);
       logger.info("Delete the job", job.id);
