@@ -7,7 +7,7 @@ export const useJobSocket = (setJobs) => {
     const connect = () => {
       connection = new WebSocket("ws://localhost:9002");
       connection.onmessage = (event) => {
-        console.log(event);
+        // console.log(event);
         try {
           const data = JSON.parse(event.data);
           if (data.type === "JOB_STATUS_CHANGE") {

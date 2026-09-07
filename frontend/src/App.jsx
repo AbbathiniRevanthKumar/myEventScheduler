@@ -124,7 +124,7 @@ function App() {
         </div>
       </div>
       {/* job list  */}
-      <div className="flex flex-col mb-6 rounded overflow-y-auto border border-border h-100 ">
+      <div className="flex flex-col mb-6 rounded overflow-y-auto scrollbar-thin scroll-smooth scrollbar-thumb-text scrollbar-track-bg  border border-border h-100 ">
         {jobs.map((job) => (
           <JobRow key={job.id} job={job} />
         ))}

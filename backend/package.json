@@ -1,0 +1,11 @@
+{
+    "name": "myeventscheduler",
+    "private": true,
+    "workspaces": [
+        "services/*",
+        "packages/*"
+    ],
+    "devDependencies": {
+        "typescript": "^5.9.2"
+    }
+}

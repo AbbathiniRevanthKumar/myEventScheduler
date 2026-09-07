@@ -1,0 +1,58 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: myeventscheduler-redis
+    ports:
+      - "6379:6379"
+    # volumes:
+    #   - redis-data:/data
+    command: redis-server --appendonly yes
+
+  scheduler-service:
+    build:
+      context: .
+      dockerfile: services/scheduler-service/Dockerfile
+    container_name: myeventscheduler-scheduler-service
+    depends_on:
+      - redis
+    environment:
+      NODE_ENV: production
+      PG_HOST: host.docker.internal
+      PG_DATABASE: event_scheduler
+      PG_USER: postgres
+      PG_PASSWORD: 1812
+      PG_PORT: 5432
+      REDIS_PORT: 6379
+      REDIS_HOST: redis
+      APP_ENV: production
+      PORT: 9001
+      NOTIFICATION_PORT: 9002
+    ports:
+      - "9001:9001"
+  worker-service:
+    build:
+      context: .
+      dockerfile: services/worker-service/Dockerfile
+    container_name: myeventscheduler-worker-service
+    depends_on:
+      - redis
+    environment:
+      APP_ENV: production
+      SCHEDULER_SERVICE_BASE_URL : http://scheduler-service:9001
+      REDIS_PORT: 6379
+      REDIS_HOST: redis
+  notification-service:
+    build:
+      context: .
+      dockerfile: services/notification-service/Dockerfile
+    container_name: myeventscheduler-notification-service
+    depends_on:
+      - redis
+    environment:
+      NODE_ENV: production
+      REDIS_PORT: 6379
+      REDIS_HOST: redis
+      APP_ENV: production
+      PORT: 9002
+    ports:
+      - "9002:9002"

@@ -1,0 +1,23 @@
+{
+  "name": "notification-service",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "notification": "ts-node src/notification/server.ts",
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "winston": "^3.19.0",
+    "ws": "^8.21.3"
+  },
+  "devDependencies": {
+    "@types/winston": "^2.4.4",
+    "@types/ws": "^8.18.1"
+  }
+}
