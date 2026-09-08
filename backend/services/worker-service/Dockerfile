@@ -26,4 +26,4 @@ COPY --from=builder /backend/node_modules ./node_modules
 # ... plus whatever package.json is needed for runtime
 
 EXPOSE 9001
-CMD ["node", "dist/worker/worker.js"]
+CMD ["node", "dist/index.js"]
