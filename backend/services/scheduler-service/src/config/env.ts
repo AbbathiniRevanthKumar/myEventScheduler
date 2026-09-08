@@ -1,6 +1,8 @@
 // env from .env file for now
 import dotenv from "dotenv";
 import path from "path";
+
+dotenv.config();
 const appEnv = process.env.APP_ENV || "development";
 const envFilePath = path.resolve(process.cwd(), `.env.${appEnv}`);
 

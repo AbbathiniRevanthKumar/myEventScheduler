@@ -1,4 +1,20 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: myeventscheduler-postgres
+    environment:
+      POSTGRES_DB: event_scheduler
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1812
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   redis:
     image: redis:7-alpine
     container_name: myeventscheduler-redis
@@ -14,10 +30,13 @@ services:
       dockerfile: services/scheduler-service/Dockerfile
     container_name: myeventscheduler-scheduler-service
     depends_on:
-      - redis
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_healthy
     environment:
       NODE_ENV: production
-      PG_HOST: host.docker.internal
+      PG_HOST: postgres
       PG_DATABASE: event_scheduler
       PG_USER: postgres
       PG_PASSWORD: 1812
@@ -35,10 +54,13 @@ services:
       dockerfile: services/worker-service/Dockerfile
     container_name: myeventscheduler-worker-service
     depends_on:
-      - redis
+      redis:
+        condition: service_started
+      scheduler-service:
+        condition: service_started
     environment:
       APP_ENV: production
-      SCHEDULER_SERVICE_BASE_URL : http://scheduler-service:9001
+      SCHEDULER_SERVICE_BASE_URL: http://scheduler-service:9001
       REDIS_PORT: 6379
       REDIS_HOST: redis
   notification-service:
@@ -56,3 +78,13 @@ services:
       PORT: 9002
     ports:
       - "9002:9002"
+  frontend:
+    build:
+      context: ./../frontend
+      dockerfile: Dockerfile
+    depends_on:
+      - scheduler-service
+    ports:
+      - "3000:80"
+volumes:
+  postgres-data:
