@@ -25,5 +25,5 @@ COPY --from=builder /backend/services/worker-service/dist ./dist
 COPY --from=builder /backend/node_modules ./node_modules
 # ... plus whatever package.json is needed for runtime
 
-EXPOSE 9001
+EXPOSE 9003
 CMD ["node", "dist/index.js"]
