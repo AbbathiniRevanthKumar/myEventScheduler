@@ -48,7 +48,7 @@ function App() {
     const fetchJobs = async () => {
       setIsLoading(true);
       const response = await axios.get(
-        "http://localhost:9001/scheduler-service/api/v1/jobs",
+        `${import.meta.env.VITE_SCHEDULER_SERVICE_URL}/scheduler-service/api/v1/jobs`,
       );
       const jobs = response.data.data ?? [];
       setJobs(jobs);

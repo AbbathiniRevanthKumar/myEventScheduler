@@ -5,7 +5,7 @@ export const useJobSocket = (setJobs) => {
     let reconnectTimeOut;
     let connection;
     const connect = () => {
-      connection = new WebSocket("ws://localhost:9002");
+      connection = new WebSocket(import.meta.env.VITE_WEBSOCKET_URL);
       connection.onmessage = (event) => {
         // console.log(event);
         try {
